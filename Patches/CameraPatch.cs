@@ -16,8 +16,12 @@ namespace LCCameraPosition.Patches
         private UnityEngine.Vector3 cameraOffset = UnityEngine.Vector3.zero;
 
         internal ManualLogSource mls;
+
+        static float originalFov = 0f;
         public static float zoomFov = 0f;
-        public static UnityEngine.Vector3 playerScale;
+
+        static UnityEngine.Vector3 originalScale;
+        public static UnityEngine.Vector3 colliderScale;
 
         [HarmonyPatch("Awake")]
         [HarmonyPostfix]
@@ -39,8 +43,13 @@ namespace LCCameraPosition.Patches
             if((Object)(object)localPlayer == (Object)null)
             {
                 localPlayer = StartOfRound.Instance.localPlayerController;
-                zoomFov = 68f;
-                playerScale = localPlayer.thisPlayerBody.transform.localScale;
+
+                originalFov = 68f;
+                zoomFov = originalFov;
+
+                originalScale = localPlayer.thisPlayerBody.transform.localScale;
+                colliderScale = originalScale;
+
                 localArmsUpdater.plrCntrB = localPlayer;
             }
 
@@ -48,33 +57,42 @@ namespace LCCameraPosition.Patches
             if (k.upArrowKey.isPressed)
             {
                 cameraOffset.y += 0.01f;
-                playerScale.y += 0.01f;
+
+                colliderScale.x += 0.01f;
+                colliderScale.y += 0.01f;
+                colliderScale.z += 0.01f;
+                
                 zoomFov += 0.1f;
             }
             if (k.downArrowKey.isPressed)
             {
                 cameraOffset.y -= 0.01f;
-                playerScale.y -= 0.01f;
+
+                colliderScale.x -= 0.01f;
+                colliderScale.y -= 0.01f;
+                colliderScale.z -= 0.01f;
+
                 zoomFov -= 0.1f;
             }
-            if(k.leftShiftKey.isPressed && k.numpad0Key.isPressed)
+            if (k.leftShiftKey.isPressed && k.numpad0Key.isPressed)
             {
                 cameraOffset = UnityEngine.Vector3.zero;
+                zoomFov = originalFov;
+                colliderScale = originalScale;
             }
 
             if (!localPlayer.isPlayerDead && !localPlayer.inTerminalMenu)
             {
                 localPlayer.gameplayCamera.transform.localPosition = cameraOffset;
                 if (localPlayer.gameplayCamera.fieldOfView != zoomFov)
-                    mls.LogInfo("FOV is " + zoomFov);
                 localPlayer.gameplayCamera.fieldOfView = zoomFov;
-
-                localPlayer.thisPlayerBody.transform.localScale = playerScale;
+                localPlayer.thisPlayerBody.transform.localScale = colliderScale;
             }
             else
             {
                 localPlayer.gameplayCamera.transform.localPosition = UnityEngine.Vector3.zero;
-                localPlayer.gameplayCamera.fieldOfView = 68f;
+                localPlayer.gameplayCamera.fieldOfView = originalFov;
+                localPlayer.thisPlayerBody.transform.localScale = originalScale;
             }
         }
 
